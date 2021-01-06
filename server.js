@@ -25,7 +25,7 @@ App.use(Cors())
 
 App.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-App.use('/twitwee/api/v1', AppRouter);
+App.use('/twitee/api/v1', AppRouter);
 
 
 
