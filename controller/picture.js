@@ -1,4 +1,4 @@
-const { imageUpload, deleteImage } = require('../services/Image')
+const { imageUpload, deleteImage } = require('../Authentication/Images')
 const { promisify } = require('util')
 
 /**

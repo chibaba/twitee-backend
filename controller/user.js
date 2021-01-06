@@ -1,4 +1,4 @@
-const pool = require('../database/')
+const createdPool = require('../database/')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 
@@ -12,7 +12,7 @@ const getUserDetails = async (req, res) => {
   try {
     const { username } = req.params
     const loggedUserId = req.user.id
-    const userDetails = await pool.query(
+    const userDetails = await createdPool.query(
       'SELECT user_id, username, bio, profile_pic, followers, following, created_on, follower_id FROM users LEFT JOIN followers ON followers.follower_user = $2 AND followers.following_user = users.user_id  WHERE username = $1',
       [username, loggedUserId]
     )
@@ -26,7 +26,7 @@ const getUserDetails = async (req, res) => {
     resp.user = {
       id: userDetails.rows[0].user_id,
       username: username,
-      bio: userDetails.rows[0].bio,
+      profile: userDetails.rows[0].bio,
       followers: userDetails.rows[0].followers,
       following: userDetails.rows[0].following,
       avatar: userDetails.rows[0].profile_pic,
@@ -49,15 +49,15 @@ const followUser = async (req, res) => {
   const loggedUserId = req.user.id
   const { followedUser } = req.body
   try {
-    const followUser = await pool.query(
+    const followUser = await createdPool.query(
       'INSERT INTO followers (follower_user, following_user, followed_on) VALUES ($1, $2, $3) RETURNING *',
       [loggedUserId, followedUser, Date.now()]
     )
-    const followingCount = await pool.query(
+    const followingCount = await createdPool.query(
       'UPDATE users SET following = following + 1 WHERE user_id = $1 RETURNING first_name, last_name, username, profile_pic, following',
       [loggedUserId]
     )
-    const followerCount = await pool.query(
+    const followerCount = await createdPool.query(
       'UPDATE users SET followers = followers + 1 WHERE user_id = $1 RETURNING followers',
       [followedUser]
     )
@@ -91,15 +91,15 @@ const followUser = async (req, res) => {
 const unFollowUser = async (req, res) => {
   const { followId } = req.params
   try {
-    const unfollowUser = await pool.query(
+    const unfollowUser = await createdPool.query(
       'DELETE FROM followers WHERE follower_id = $1 RETURNING *',
       [followId]
     )
-    const followingCount = await pool.query(
+    const followingCount = await createdPool.query(
       'UPDATE users SET following = following - 1  WHERE user_id = $1 RETURNING following',
       [unfollowUser.rows[0].follower_user]
     )
-    const followerCount = await pool.query(
+    const followerCount = await created.query(
       'UPDATE users SET followers = followers - 1 WHERE user_id = $1 RETURNING followers',
       [unfollowUser.rows[0].following_user]
     )
@@ -133,7 +133,7 @@ const getFollowers = async (req, res) => {
       query = stmt1 + ' AND follower_id < $2' + stmt2
       values.push(current)
     } else query = stmt1 + stmt2
-    const result = await pool.query(query, values)
+    const result = await createdPool.query(query, values)
     if (!result.rowCount) return res.status(200).json({ followers: [], users: {} })
     const resp = {
       followers: [],
@@ -173,7 +173,7 @@ const getFollowing = async (req, res) => {
       query = stmt1 + ' AND follower_id < $2' + stmt2
       values.push(current)
     } else query = stmt1 + stmt2
-    const result = await pool.query(query, values)
+    const result = await createdPool.query(query, values)
     if (!result.rowCount) return res.status(200).json({ following: [], users: {} })
     const resp = {
       following: [],
@@ -222,7 +222,7 @@ const updateProfile = async (req, res) => {
       'UPDATE users SET ' +
       update +
       ' WHERE user_id = $1 RETURNING username, profile_pic, bio'
-    const result = await pool.query(query, values)
+    const result = await createdPool.query(query, values)
     return res.status(200).json({
       id: loggedUserId,
       username: result.rows[0].username,
@@ -245,7 +245,7 @@ const updateProfile = async (req, res) => {
 const searchUser = async (req, res) => {
   const { name, current } = req.params
   try {
-    const result = await pool.query(
+    const result = await createdPool.query(
       'SELECT user_id as id, username, profile_pic as avatar, bio FROM users WHERE first_name ILIKE $1 OR last_name ILIKE $1 AND user_id > $2 ORDER BY user_id ASC LIMIT 20',
       [`%${name}%`, current]
     )
@@ -266,7 +266,7 @@ const searchUser = async (req, res) => {
 const registerUser = async (req, res) => {
   const { email, password } = req.body
   try {
-    const checkEmail = await pool.query('SELECT user_id FROM users WHERE email_address = $1', [
+    const checkEmail = await createdPool.query('SELECT user_id FROM users WHERE email_address = $1', [
       email
     ])
     if (checkEmail.rowCount > 0) {
@@ -276,8 +276,8 @@ const registerUser = async (req, res) => {
     }
     const username = email.split('@')[0]
     const hashedPassword = await bcrypt.hash(password, 10)
-    const user = await pool.query(
-      'INSERT INTO USERS (username, email_address, password, registered_on) VALUES ($1, $2, $3, $4) RETURNING user_id',
+    const user = await createdPool.query(
+      'INSERT INTO USERS (username, email_address, password, created_on) VALUES ($1, $2, $3, $4) RETURNING user_id',
       [ username, email, hashedPassword, Date.now()]
     )
 
@@ -310,7 +310,7 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   const { email, password } = req.body
   try {
-    const checkUser = await pool.query(
+    const checkUser = await createdPool.query(
       'SELECT user_id, username, password, profile_pic FROM users WHERE email_address = $1',
       [email]
     )
@@ -351,7 +351,7 @@ const loginUser = async (req, res) => {
  */
 const checkUser = async (req, res) => {
   try {
-    const checkUser = await pool.query(
+    const checkUser = await createdPool.query(
       'SELECT user_id as id, username, profile_pic as avatar FROM users WHERE user_id = $1',
       [req.user.id]
     )
@@ -372,7 +372,7 @@ const changePassword = async (req, res) => {
   const { password, newPassword } = req.body
   const loggedUserId = req.user.id
   try {
-    const getPassword = await pool.query('SELECT password FROM users WHERE user_id = $1', [
+    const getPassword = await createdPool.query('SELECT password FROM users WHERE user_id = $1', [
       loggedUserId
     ])
     const checkPass = await bcrypt.compare(password, getPassword.rows[0].password)
@@ -409,7 +409,7 @@ const getFeed = async (req, res) => {
       query = stmt1 + ' AND posts.post_id < $2' + stmt2
       values.push(current)
     } else query = stmt1 + stmt2
-    const result = await pool.query(query, values)
+    const result = await createdPool.query(query, values)
     console.log(result.rows)
     const posts = {
       contents: {},

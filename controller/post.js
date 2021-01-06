@@ -1,4 +1,4 @@
-const pool = require('../db/')
+const {createdPool } = require('../database/')
 
 /**
  * Create a new post
@@ -14,7 +14,7 @@ const createNewPost = async (req, res) => {
     const query =
       'INSERT INTO posts (caption, image_urls, posted_by, posted_on) VALUES ($1, $2, $3, $4) RETURNING *'
     const values = [caption, images, userId, Date.now()]
-    const result = await pool.query(query, values)
+    const result = await createdPool.query(query, values)
     const post = result.rows[0]
     const resp = {
       posts: {
@@ -61,7 +61,7 @@ const getUserPosts = async (req, res) => {
       query = stmt1 + ' AND posts.post_id < $3' + stmt2
       values.push(current)
     } else query = stmt1 + stmt2
-    const result = await pool.query(query, values)
+    const result = await createdPool.query(query, values)
     const posts = {
       contents: {},
       ids: []
@@ -108,10 +108,10 @@ const likePost = async (req, res) => {
   try {
     let stmt =
       'INSERT INTO likes (post_id, user_id, liked_on) VALUES ($1, $2, $3) returning like_id'
-    let result = await pool.query(stmt, [postId, loggedUserId, Date.now()])
+    let result = await createdPool.query(stmt, [postId, loggedUserId, Date.now()])
     const resp = { liked: result.rows[0].like_id, likes: 0 }
     stmt = 'UPDATE posts SET like_count = like_count + 1 WHERE post_id = $1 RETURNING like_count'
-    result = await pool.query(stmt, [postId])
+    result = await createdPool.query(stmt, [postId])
     resp.likes = result.rows[0].like_count
     return res.status(200).json({ message: 'Post liked', content: resp })
   } catch (err) {
@@ -131,9 +131,9 @@ const unlikePost = async (req, res) => {
   const { likeId } = req.body
   try {
     let stmt = 'DELETE FROM likes WHERE like_id = $1 RETURNING *'
-    let result = await pool.query(stmt, [likeId])
+    let result = await createPool.query(stmt, [likeId])
     stmt = 'UPDATE posts SET like_count = like_count - 1 WHERE post_id = $1 RETURNING like_count'
-    result = await pool.query(stmt, [result.rows[0].post_id])
+    result = await createdPool.query(stmt, [result.rows[0].post_id])
     return res.status(200).json({
       message: 'Post unliked',
       content: { liked: false, likes: result.rows[0].like_count }
@@ -157,7 +157,7 @@ const comment = async (req, res) => {
   try {
     let stmt =
       'INSERT INTO comments (post_id, user_id, comment, commented_on) VALUES ($1, $2, $3, $4) returning *'
-    let result = await pool.query(stmt, [postId, loggedUserId, comment, Date.now()])
+    let result = await createdPool.query(stmt, [postId, loggedUserId, comment, Date.now()])
     const resp = {
       postId: postId,
       comment_ids: [result.rows[0].comment_id],
@@ -171,7 +171,7 @@ const comment = async (req, res) => {
     }
     stmt =
       'UPDATE posts SET comment_count = comment_count + 1 WHERE post_id = $1 RETURNING comment_count'
-    result = await pool.query(stmt, [postId])
+    result = await createdPool.query(stmt, [postId])
     resp.comments = result.rows[0].comment_count
     return res.status(200).json({ message: 'Comment created', contents: resp })
   } catch (err) {
@@ -191,7 +191,7 @@ const deleteComment = async (req, res) => {
   const { commentId } = req.body
   try {
     let stmt = 'DELETE FROM comments WHERE comment_id = $1 RETURNING *'
-    let result = await pool.query(stmt, [commentId])
+    let result = await createdPool.query(stmt, [commentId])
     stmt =
       'UPDATE posts SET comment_count = comment_count - 1 WHERE post_id = $1 RETURNING comment_count, post_id'
     result = await pool.query(stmt, [result.rows[0].post_id])
@@ -223,7 +223,7 @@ const getComment = async (req, res) => {
       values.push(current)
     }
     query += ' ORDER BY comment_id DESC LIMIT 3'
-    const result = await pool.query(query, values)
+    const result = await createdPool.query(query, values)
     const resp = {
       postId: postId,
       commentIds: [],
@@ -263,7 +263,7 @@ const deletePost = async (req, res) => {
   const { postId } = req.params
   const loggedUserId = req.user.id
   try {
-    await pool.query('DELETE FROM posts WHERE post_id = $1 AND posted_by = $2', [
+    await createdPool.query('DELETE FROM posts WHERE post_id = $1 AND posted_by = $2', [
       postId,
       loggedUserId
     ])
@@ -271,7 +271,7 @@ const deletePost = async (req, res) => {
   } catch (err) {
     return res
       .status(500)
-      .json({ message: 'There was an error while deleting the post. PLease try again later' })
+      .json({ message: 'This post cannot be deleted . PLease try again later' })
   }
 }
 

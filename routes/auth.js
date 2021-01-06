@@ -1,6 +1,6 @@
-const { registerUser, loginUser, checkUser } = require('../controllers/user')
+const { registerUser, loginUser, checkUser } = require('../controller/user')
 const Router = require('express').Router()
-const authUser = require('../services/Auth')
+const authUser = require('../Authentication/Auth')
 
 /**
  * @swagger

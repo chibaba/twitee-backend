@@ -15,14 +15,14 @@ AWS.config.update({
 
 const s3 = new AWS.S3()
 
-const storage = MulterS3({
-  s3: s3,
-  bucket: process.env.AWS_S3_BUCKET,
-  acl: 'public-read',
-  key: function (req, file, callback) {
-    callback(null, v4() + path.extname(file.originalname))
-  }
-})
+// const storage = MulterS3({
+//   s3: s3,
+//   bucket: process.env.AWS_BUCKET_NAME,
+//   acl: 'public-read',
+//   key: function (req, file, callback) {
+//     callback(null, v4() + path.extname(file.originalname))
+//   }
+// })
 
 const limits = {
   fileSize: 1024 * 1024 * 5
