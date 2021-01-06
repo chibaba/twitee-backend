@@ -26,6 +26,11 @@ const swaggerDefinition = {
   },
   servers: [
   // this is where i will place the hosted server
+  {
+
+    name: "development server",
+    url: "https://twitissss.herokuapp.com/"
+  }
   ],
 };
 
